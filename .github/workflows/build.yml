@@ -82,32 +82,46 @@ jobs:
 
       - name: Build binaries
         run: |
-
-          mkdir dist
-
+      
+          mkdir -p dist
+      
           cd src
-
-          for GOOS in linux windows darwin
-          do
-            for GOARCH in amd64 arm64
-            do
-
-              OUT="../dist/ConsoleClient-${GOOS}-${GOARCH}"
-
-              if [ "$GOOS" = "windows" ]
-              then
-                OUT="${OUT}.exe"
-              fi
-
-              GOOS=$GOOS \
-              GOARCH=$GOARCH \
-              CGO_ENABLED=0 \
-              go build \
-                -o "$OUT" \
-                ./ConsoleClient
-
-            done
-          done
+      
+          build() {
+      
+            GOOS="$1"
+            GOARCH="$2"
+            NAME="$3"
+      
+            OUT="../dist/psiphon-tunnel-core-${GOOS}-${NAME}"
+      
+            if [ "$GOOS" = "windows" ]; then
+              OUT="${OUT}.exe"
+            fi
+      
+            echo "Building $OUT"
+      
+            GOOS=$GOOS \
+            GOARCH=$GOARCH \
+            CGO_ENABLED=0 \
+            go build \
+              -trimpath \
+              -ldflags="-s -w" \
+              -o "$OUT" \
+              ./ConsoleClient
+          }
+      
+          build linux amd64 x86_64
+          build linux arm64 arm64
+          build linux 386 x86
+          build linux arm armv7
+      
+          build windows amd64 x86_64
+          build windows arm64 arm64
+          build windows 386 x86
+      
+          build darwin amd64 x86_64
+          build darwin arm64 arm64
 
       ##################################################
       # Checksums
