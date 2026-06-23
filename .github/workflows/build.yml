@@ -59,6 +59,7 @@ jobs:
       ####################################################################
     
       - name: Clone upstream repository
+        if: steps.release_check.outputs.exists == 'false'
         run: |
           git clone https://github.com/Psiphon-Labs/psiphon-tunnel-core.git src
     
@@ -71,6 +72,7 @@ jobs:
       ####################################################################
     
       - name: Setup Go
+        if: steps.release_check.outputs.exists == 'false'
         uses: actions/setup-go@v5
         with:
           go-version-file: src/go.mod
@@ -80,6 +82,7 @@ jobs:
       ####################################################################
     
       - name: Build binaries
+        if: steps.release_check.outputs.exists == 'false'
         run: |
     
           mkdir -p dist
@@ -124,6 +127,7 @@ jobs:
       ####################################################################
     
       - name: Generate SHA256 checksums
+        if: steps.release_check.outputs.exists == 'false'
         run: |
           cd dist
           sha256sum * > SHA256SUMS.txt
@@ -133,6 +137,7 @@ jobs:
       ####################################################################
     
       - name: Generate release notes
+        if: steps.release_check.outputs.exists == 'false'
         run: |
           cat > RELEASE_NOTES.md << EOF
           Built automatically from:
@@ -162,6 +167,7 @@ jobs:
       ####################################################################
     
       - name: Publish Release
+        if: steps.release_check.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: upstream-${{ steps.upstream.outputs.sha }}
