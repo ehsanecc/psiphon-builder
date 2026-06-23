@@ -1,146 +1,171 @@
-name: Build Psiphon
+name: Build Psiphon Tunnel Core
 
 on:
-  workflow_dispatch:
+workflow_dispatch:
 
-  schedule:
-    - cron: '0 * * * *'
+schedule:
+- cron: '0 * * * *'
 
 permissions:
-  contents: write
+contents: write
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+build:
+runs-on: ubuntu-latest
 
-    steps:
+steps:
 
-      - uses: actions/checkout@v4
+  - name: Checkout repository
+    uses: actions/checkout@v4
 
-      ##################################################
-      # Get latest upstream commit
-      ##################################################
+  ####################################################################
+  # Get latest upstream commit
+  ####################################################################
 
-      - name: Get latest SHA
-        id: upstream
-        run: |
-          SHA=$(git ls-remote https://github.com/Psiphon-Labs/psiphon-tunnel-core.git HEAD | cut -f1)
+  - name: Get latest upstream SHA
+    id: upstream
+    run: |
+      SHA=$(git ls-remote https://github.com/Psiphon-Labs/psiphon-tunnel-core.git HEAD | cut -f1)
 
-          echo "sha=$SHA" >> $GITHUB_OUTPUT
+      echo "sha=$SHA" >> $GITHUB_OUTPUT
+      echo "short_sha=${SHA:0:7}" >> $GITHUB_OUTPUT
 
-      ##################################################
-      # Check release existence
-      ##################################################
+  ####################################################################
+  # Skip if release already exists
+  ####################################################################
 
-      - name: Check already built
-        id: check
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TAG="upstream-${{ steps.upstream.outputs.sha }}"
+  - name: Check release existence
+    id: release_check
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    run: |
+      TAG="upstream-${{ steps.upstream.outputs.sha }}"
 
-          if gh release view "$TAG" >/dev/null 2>&1
-          then
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-          fi
+      if gh release view "$TAG" >/dev/null 2>&1
+      then
+        echo "exists=true" >> $GITHUB_OUTPUT
+      else
+        echo "exists=false" >> $GITHUB_OUTPUT
+      fi
 
-      ##################################################
-      # Stop if already built
-      ##################################################
+  - name: Exit if already built
+    if: steps.release_check.outputs.exists == 'true'
+    run: |
+      echo "Release already exists."
+      exit 0
 
-      - name: Exit
-        if: steps.check.outputs.exists == 'true'
-        run: |
-          echo "Already built"
-          exit 0
+  ####################################################################
+  # Clone upstream
+  ####################################################################
 
-      ##################################################
-      # Clone source
-      ##################################################
+  - name: Clone upstream repository
+    run: |
+      git clone https://github.com/Psiphon-Labs/psiphon-tunnel-core.git src
 
-      - name: Clone source
-        run: |
-          git clone https://github.com/Psiphon-Labs/psiphon-tunnel-core.git src
+      cd src
 
-          cd src
+      git checkout ${{ steps.upstream.outputs.sha }}
 
-          git checkout ${{ steps.upstream.outputs.sha }}
+  ####################################################################
+  # Setup Go
+  ####################################################################
 
-      ##################################################
-      # Setup Go
-      ##################################################
+  - name: Setup Go
+    uses: actions/setup-go@v5
+    with:
+      go-version-file: src/go.mod
 
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: src/go.mod
+  ####################################################################
+  # Build binaries
+  ####################################################################
 
-      ##################################################
-      # Build
-      ##################################################
+  - name: Build binaries
+    run: |
 
-      - name: Build binaries
-        run: |
-      
-          mkdir -p dist
-      
-          cd src
-      
-          build() {
-      
-            GOOS="$1"
-            GOARCH="$2"
-            NAME="$3"
-      
-            OUT="../dist/psiphon-tunnel-core-${GOOS}-${NAME}"
-      
-            if [ "$GOOS" = "windows" ]; then
-              OUT="${OUT}.exe"
-            fi
-      
-            echo "Building $OUT"
-      
-            GOOS=$GOOS \
-            GOARCH=$GOARCH \
-            CGO_ENABLED=0 \
-            go build \
-              -trimpath \
-              -ldflags="-s -w" \
-              -o "$OUT" \
-              ./ConsoleClient
-          }
-      
-          build linux amd64 x86_64
-          build linux arm64 arm64
-          build linux 386 x86
-          build linux arm armv7
-      
-          build windows amd64 x86_64
-          build windows arm64 arm64
-          build windows 386 x86
-      
-          build darwin amd64 x86_64
-          build darwin arm64 arm64
+      mkdir -p dist
 
-      ##################################################
-      # Checksums
-      ##################################################
+      cd src
 
-      - name: Checksums
-        run: |
-          cd dist
+      build() {
 
-          sha256sum * > SHA256SUMS.txt
+        GOOS="$1"
+        GOARCH="$2"
+        ARCHNAME="$3"
 
-      ##################################################
-      # Release
-      ##################################################
+        OUT="../dist/psiphon-tunnel-core-${GOOS}-${ARCHNAME}"
 
-      - name: Create release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: upstream-${{ steps.upstream.outputs.sha }}
-          name: Psiphon ${{ steps.upstream.outputs.sha }}
-          files: |
-            dist/*
+        if [ "$GOOS" = "windows" ]; then
+          OUT="${OUT}.exe"
+        fi
+
+        echo "Building $OUT"
+
+        GOOS=$GOOS \
+        GOARCH=$GOARCH \
+        CGO_ENABLED=0 \
+        go build \
+          -trimpath \
+          -ldflags="-s -w" \
+          -o "$OUT" \
+          ./ConsoleClient
+      }
+
+      build linux amd64 x86_64
+      build linux arm64 arm64
+
+      build windows amd64 x86_64
+      build windows arm64 arm64
+
+      build darwin amd64 x86_64
+      build darwin arm64 arm64
+
+  ####################################################################
+  # Checksums
+  ####################################################################
+
+  - name: Generate SHA256 checksums
+    run: |
+      cd dist
+      sha256sum * > SHA256SUMS.txt
+
+  ####################################################################
+  # Generate release notes
+  ####################################################################
+
+  - name: Generate release notes
+    run: |
+      cat > RELEASE_NOTES.md << EOF
+      Built automatically from:
+
+      Repository:
+      Psiphon-Labs/psiphon-tunnel-core
+
+      Commit:
+      ${{ steps.upstream.outputs.sha }}
+
+      Included binaries:
+
+      - Linux x86_64
+      - Linux ARM64
+      - Windows x86_64
+      - Windows ARM64
+      - macOS x86_64
+      - macOS ARM64
+
+      SHA256 checksums are included in SHA256SUMS.txt.
+
+      This is an unofficial automated build.
+      EOF
+
+  ####################################################################
+  # Create GitHub Release
+  ####################################################################
+
+  - name: Publish Release
+    uses: softprops/action-gh-release@v2
+    with:
+      tag_name: upstream-${{ steps.upstream.outputs.sha }}
+      name: Psiphon Tunnel Core - upstream-${{ steps.upstream.outputs.short_sha }}
+      body_path: RELEASE_NOTES.md
+      files: |
+        dist/*
