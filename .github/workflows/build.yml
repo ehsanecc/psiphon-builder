@@ -40,6 +40,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="upstream-${{ steps.upstream.outputs.sha }}"
+          LATEST_TAG=$(gh release view --json tagName --jq .tagName)
+          echo "latest_compiled_commit=${LATEST_TAG:9:7}" >> $GITHUB_OUTPUT
     
           if gh release view "$TAG" >/dev/null 2>&1
           then
@@ -115,9 +117,12 @@ jobs:
     
           build linux amd64 x86_64
           build linux arm64 arm64
+          build linux 386 x86
+          build linux arm arm
     
           build windows amd64 x86_64
           build windows arm64 arm64
+          build windows 386 x86
     
           build darwin amd64 x86_64
           build darwin arm64 arm64
@@ -144,20 +149,12 @@ jobs:
     
           Repository:
           Psiphon-Labs/psiphon-tunnel-core
+
+          Git log:
+          echo $(git log --format="%h: %s" ${{ steps.release_check.outputs.latest_compiled_commit }}..${{ steps.upstream.outputs.sha }})
     
           Commit:
           ${{ steps.upstream.outputs.sha }}
-    
-          Included binaries:
-    
-          - Linux x86_64
-          - Linux ARM64
-          - Windows x86_64
-          - Windows ARM64
-          - macOS x86_64
-          - macOS ARM64
-    
-          SHA256 checksums are included in SHA256SUMS.txt.
     
           This is an unofficial automated build.
           EOF
