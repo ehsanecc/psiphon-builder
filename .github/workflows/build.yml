@@ -67,7 +67,9 @@ jobs:
           git clone https://github.com/Psiphon-Labs/psiphon-tunnel-core.git src
           cd src
           git checkout ${{ steps.upstream.outputs.sha }}
-          echo "git_log=\"$(git log --format='%h: %s' ${{ steps.release_check.outputs.latest_compiled_commit }}..${{ steps.upstream.outputs.sha }})\"" >> $GITHUB_OUTPUT
+          echo "git_log<<EOF" >> $GITHUB_OUTPUT
+          echo "$(git log --format='%h: %s' ${{ steps.release_check.outputs.latest_compiled_commit }}..${{ steps.upstream.outputs.sha }})" >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
     
       ####################################################################
       # Setup Go
