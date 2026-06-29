@@ -61,13 +61,13 @@ jobs:
       ####################################################################
     
       - name: Clone upstream repository
+        id: clone_upstream_repository
         if: steps.release_check.outputs.exists == 'false'
         run: |
           git clone https://github.com/Psiphon-Labs/psiphon-tunnel-core.git src
-    
           cd src
-    
           git checkout ${{ steps.upstream.outputs.sha }}
+          echo "git_log=$(git log --format='%h: %s' ${{ steps.release_check.outputs.latest_compiled_commit }}..${{ steps.upstream.outputs.sha }})" >> $GITHUB_OUTPUT
     
       ####################################################################
       # Setup Go
@@ -86,11 +86,8 @@ jobs:
       - name: Build binaries
         if: steps.release_check.outputs.exists == 'false'
         run: |
-    
           mkdir -p dist
-    
           cd src
-    
           build() {
     
             GOOS="$1"
@@ -151,7 +148,7 @@ jobs:
           Psiphon-Labs/psiphon-tunnel-core
 
           Git log:
-          echo $(git log --format="%h: %s" ${{ steps.release_check.outputs.latest_compiled_commit }}..${{ steps.upstream.outputs.sha }})
+          ${{ steps.clone_upstream_repository.outputs.git_log }}
     
           Commit:
           ${{ steps.upstream.outputs.sha }}
