@@ -22,6 +22,29 @@ upstream-<commit-sha>
 
 This makes every build reproducible and traceable to the exact source revision used.
 
+## Direct Download (Latest Release)
+
+Since all filenames are the same, these are direct links to latest release files:
+
+[psiphon-tunnel-core-darwin-arm64](https://github.com/ehsanecc/psiphon-builder/releases/latest/download/psiphon-tunnel-core-darwin-arm64)
+
+[psiphon-tunnel-core-darwin-x86_64](https://github.com/ehsanecc/psiphon-builder/releases/latest/download/psiphon-tunnel-core-darwin-x86_64)
+
+[psiphon-tunnel-core-linux-arm](https://github.com/ehsanecc/psiphon-builder/releases/latest/download/psiphon-tunnel-core-linux-arm)
+
+[psiphon-tunnel-core-linux-arm64](https://github.com/ehsanecc/psiphon-builder/releases/latest/download/psiphon-tunnel-core-linux-arm64)
+
+[psiphon-tunnel-core-linux-x86](https://github.com/ehsanecc/psiphon-builder/releases/latest/download/psiphon-tunnel-core-linux-x86)
+
+[psiphon-tunnel-core-linux-x86_64](https://github.com/ehsanecc/psiphon-builder/releases/latest/download/psiphon-tunnel-core-linux-x86_64)
+
+[psiphon-tunnel-core-windows-arm64.exe](https://github.com/ehsanecc/psiphon-builder/releases/latest/download/psiphon-tunnel-core-windows-arm64.exe)
+
+[psiphon-tunnel-core-windows-x86.exe](https://github.com/ehsanecc/psiphon-builder/releases/latest/download/psiphon-tunnel-core-windows-x86.exe)
+
+[psiphon-tunnel-core-windows-x86_64.exe](https://github.com/ehsanecc/psiphon-builder/releases/latest/download/psiphon-tunnel-core-windows-x86_64.exe)
+
+
 ## Disclaimer
 
 This is an unofficial community-maintained build repository.
